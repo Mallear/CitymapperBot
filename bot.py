@@ -5,20 +5,23 @@ from datetime import datetime, time as dtime, timedelta
 import googlemaps
 from slackclient import SlackClient
 
-SLACK_BOT_TOKEN = 'xoxb-250812903346-TT7IJzEQhPkmXGmJRQaeU8fg'
+# TODO : avoid hard coding 
+SLACK_BOT_TOKEN = ''
 BOT_NAME = 'ekinobot'
 # Commands handled by the bot
-COMMAND_LIST = ['list']
+COMMAND_LIST = ['']
 
+# TODO : avoid hard coding 
 # instantiate Slack & Twilio clients
 slack_client = SlackClient(SLACK_BOT_TOKEN)
 # Instantiate gmaps
-gmaps = googlemaps.Client(key='AIzaSyAgGGXHLgte2ypGeJUYg-GnD6bubpdLelI')
+gmaps = googlemaps.Client(key='')
 
 
 starting_hour = dtime(6,0)
 ending_hour = dtime(6,25)
 
+# TODO : avoid hard coding 
 channel = "C46UVV43H"
 
 def get_bot_id():
@@ -118,7 +121,7 @@ if __name__ == "__main__":
     if slack_client.rtm_connect():
         print("StarterBot connected and running!")
         while True:
-            command, channel = parse_slack_output(slack_client.rtm_read())
+            #command, channel = parse_slack_output(slack_client.rtm_read())
             
             now = datetime.now()
             #print( "Current : " + str(now.time()) + " ; Last : " + str(last_time))
