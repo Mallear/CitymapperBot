@@ -3,7 +3,7 @@ import time
 import json
 from slackclient import SlackClient
 
-SLACK_BOT_TOKEN = 'xoxb-'
+SLACK_BOT_TOKEN = 'xoxb-250812903346-TT7IJzEQhPkmXGmJRQaeU8fg'
 BOT_NAME = 'ekinobot'
 # Commands handled by the bot
 COMMAND_LIST = ['add', 'list', 'set']
@@ -105,7 +105,7 @@ def handle_command(command, channel):
     response = "Not sure what you mean. Use one of the *" 
     for cmd in COMMAND_LIST:
         response = response + cmd +', '
-    "* command with numbers, delimited by spaces."
+    response = response + "* command with numbers, delimited by spaces."
 
     # Get command args value
     action = command.split(' ')[0]

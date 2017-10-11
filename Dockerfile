@@ -6,4 +6,4 @@ RUN pip install slackclient
 
 EXPOSE 80
 
-CMD ["python", "/slack/bot/ichibot.py"]
+CMD ["python", "/slack/bot/bot.py"]
