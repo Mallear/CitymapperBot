@@ -1,17 +1,25 @@
 import os
 import time
 import json
+from datetime import datetime, time as dtime, timedelta
+import googlemaps
 from slackclient import SlackClient
 
 SLACK_BOT_TOKEN = 'xoxb-250812903346-TT7IJzEQhPkmXGmJRQaeU8fg'
 BOT_NAME = 'ekinobot'
 # Commands handled by the bot
-COMMAND_LIST = ['add', 'list', 'set']
-# Dictionnary used to stub a timesheet
-TIMESHEET = {'hors-projet':0, 'vacances':0, 'arval': 0}
+COMMAND_LIST = ['list']
 
 # instantiate Slack & Twilio clients
 slack_client = SlackClient(SLACK_BOT_TOKEN)
+# Instantiate gmaps
+gmaps = googlemaps.Client(key='AIzaSyAgGGXHLgte2ypGeJUYg-GnD6bubpdLelI')
+
+
+starting_hour = dtime(6,0)
+ending_hour = dtime(6,25)
+
+channel = "C46UVV43H"
 
 def get_bot_id():
     api_call = slack_client.api_call("users.list")
@@ -24,100 +32,6 @@ def get_bot_id():
                 return user.get('id')
     else:
         return None
-
-
-def handle_add_command(command, channel):
-    """
-        Receive commands to add worked hours to a precise project.
-    """
-    # Get command arguments
-    args = command.split(' ')
-    # Get the hour arg value
-    hours = args[1]
-    # If value type is OK
-    if is_number(hours):
-        # POC : "sementic" reading
-        if args[3] == 'to':
-            # Get project arg value
-            project = args[-1]
-            if project in TIMESHEET:
-                # Incr TIMESHEET value for given project
-                TIMESHEET[project] = TIMESHEET[project] + int(hours)
-                # Build response
-                response = hours + " heures imputées sur le projet " + project
-                # Build attachments (message buttons) as JSON object
-                attachments = json.dumps([{'text': 'Valider votre imputation ?', 'fallback': 'Validate your request', 'attachment_type': 'default',
-                                 'actions':[{'name': 'validate', 'text': 'Valider', 'type': 'button', 'value': True},
-                                            {'name': 'validate', 'text': 'Refuser', 'type': 'button', 'value': False}]}])
-                # Send response
-                slack_client.api_call("chat.postMessage",
-                    channel=channel, text=response, as_user=True, 
-                    attachments=attachments)
-
-            else:
-                response = "Le projet " + project + " ne vous est pas associé"
-                slack_client.api_call("chat.postMessage", channel=channel,
-                            text=response, as_user=True)
-    else:
-        response = "Veuillez renseigner une valeur d'heure valide : "+ hours
-        slack_client.api_call("chat.postMessage", channel=channel,
-                            text=response, as_user=True)
-
-
-def handle_list_command(command, channel):
-    """
-        Receive command to list worked hours for one or many projects.
-    """
-    # Get command arguments
-    args = command.split(' ')
-    # Delete command name
-    del(args[0])
-    # Init variables
-    response = 'Heures imputées du jour :\n'
-    sum_hours = 0
-    # If any project are send as args, get value in TIMESHEET and print it
-    if len(args) >= 1:
-        for project in args:
-            if project in TIMESHEET:
-                response = response + '*' + str(TIMESHEET[project]) + '*' + ' heures imputées sur le projet *' +project + '*\n'
-            else:
-                response = response + project + 'ne vous est pas associé'
-    # Else print all projects worked hours
-    else:
-        for project in TIMESHEET:
-            response = response + '*' + str(TIMESHEET[project]) + '*' + ' heures imputées sur le projet *' +project + '*\n' 
-            sum_hours = sum_hours + TIMESHEET[project]
-        response = response + 'Total de la journée : *' + str(sum_hours) + '*\n' + \
-            'Manque à imputer : *' + str(8-sum_hours) + '*'
-    # Sent the response
-    slack_client.api_call("chat.postMessage", channel=channel,
-                            text=response, as_user=True)
-
-
-def handle_command(command, channel):
-    """
-        Receives commands directed at the bot and determines if they
-        are valid commands. If so, then acts on the commands. If not,
-        returns back what it needs for clarification.
-    """
-
-    # Build response for random command (like 'help' command)
-    response = "Not sure what you mean. Use one of the *" 
-    for cmd in COMMAND_LIST:
-        response = response + cmd +', '
-    response = response + "* command with numbers, delimited by spaces."
-
-    # Get command args value
-    action = command.split(' ')[0]
-    # If action handled, do it
-    if action in COMMAND_LIST:
-        if action == 'add':
-            handle_add_command(command, channel)
-        elif action == 'list':
-            handle_list_command(command, channel)
-    else:
-        slack_client.api_call("chat.postMessage", channel=channel,
-                          text=response, as_user=True)
 
 
 def parse_slack_output(slack_rtm_output):
@@ -147,19 +61,76 @@ def is_number(s):
         return False
 
 
+def send_travel_time():
+    response = "Send travel time : " + str(datetime.now().time()) + " to channel : " + str(channel)
+    slack_client.api_call("chat.postMessage", channel='C46UVV43H',
+                            text=response, as_user=True)
+
+
+def get_travel_time():
+    pass
+
+def test_maps_api():
+    lattitude, longitude = get_coordonates_from_address('49 avenue de la redoute, 9600, Asnieres-sur-seine, Paris')
+
+    get_addr_from_coordonates((lattitude, longitude))
+
+    # Request directions via public transit
+    now = datetime.now()
+    directions_result = gmaps.directions("Sydney Town Hall",
+                                     "Parramatta, NSW",
+                                     mode="transit",
+                                     departure_time=now)
+
+def get_addr_from_coordonates(coordinates):
+    '''
+        Coordonates are a pair of (lattitude, longitude)
+        Return the formatted address
+    '''
+    reverse_geocode_result = gmaps.reverse_geocode(coordinates)
+    print(reverse_geocode_result[0]['formatted_address'])
+
+    return reverse_geocode_result[0]['formatted_address']
+
+
+def get_coordonates_from_address(addr):
+    '''
+        addr : formatted adress
+        Return pair (lattitude, longitude)
+    '''
+    geocode_result = gmaps.geocode(addr)
+
+    print(geocode_result[0]['geometry']['location'])
+    coordinates = geocode_result[0]['geometry']['location']
+    return coordinates['lat'], coordinates['lng']
+    
+
 if __name__ == "__main__":
     READ_WEBSOCKET_DELAY = 1 # 1 second delay between reading from firehose
     # starterbot's ID 
     BOT_ID = get_bot_id()
     # constants
     AT_BOT = "<@" + BOT_ID + ">"
+    # Get now datetime
+    now = datetime.now()
+    last_time = now.time()
 
     if slack_client.rtm_connect():
         print("StarterBot connected and running!")
         while True:
             command, channel = parse_slack_output(slack_client.rtm_read())
-            if command and channel:
-                handle_command(command, channel)
-            time.sleep(READ_WEBSOCKET_DELAY)
+            
+            now = datetime.now()
+            #print( "Current : " + str(now.time()) + " ; Last : " + str(last_time))
+            #print( "Starting : " + str(starting_hour) + " ; Ending : " +str(ending_hour))
+            #print(str(starting_hour <= now.time() <= ending_hour))
+            test_maps_api()
+            if starting_hour <= now.time() <= ending_hour:
+                print(str(last_time <= (now - timedelta(seconds=60*1)).time()))
+
+                if last_time <= (now - timedelta(seconds=60*1)).time():
+                    print("Launching time : " + str(now.time()))
+                    last_time = now.time()
+                    send_travel_time()
     else:
         print("Connection failed. Invalid Slack token or bot ID?")
