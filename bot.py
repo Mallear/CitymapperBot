@@ -1,28 +1,33 @@
 import os
 import time
 import json
+import yaml
 from datetime import datetime, time as dtime, timedelta
 import googlemaps
 from slackclient import SlackClient
 
-# TODO : avoid hard coding 
-SLACK_BOT_TOKEN = ''
+
+# API key loading from config file
+with open(os.path.dirname(os.path.abspath(__file__))+'/config.yml', 'r') as file:
+    conf = yaml.load(file)
+    GOOGLE_API_KEY = conf['googlemaps_api_key']
+    SLACK_BOT_TOKEN = conf['slack_bot_token'] 
+    CITYMAPPER_API_KEY = conf['citymapper_api_key']
+
+
+# Slack related informations 
 BOT_NAME = 'ekinobot'
-# Commands handled by the bot
-COMMAND_LIST = ['']
+COMMAND_LIST = [''] # Commands handled by the bot
+slack_client = SlackClient(SLACK_BOT_TOKEN) # instantiate Slack & Twilio clients
+channel = "C46UVV43H" # TODO: get channel ID from API
 
-# TODO : avoid hard coding 
-# instantiate Slack & Twilio clients
-slack_client = SlackClient(SLACK_BOT_TOKEN)
-# Instantiate gmaps
-gmaps = googlemaps.Client(key='')
+# Google related informations
+gmaps = googlemaps.Client(key=GOOGLE_API_KEY) # Instantiate gmaps
 
-
+# Timer related information
 starting_hour = dtime(6,0)
 ending_hour = dtime(6,25)
 
-# TODO : avoid hard coding 
-channel = "C46UVV43H"
 
 def get_bot_id():
     api_call = slack_client.api_call("users.list")
@@ -74,7 +79,7 @@ def get_travel_time():
     pass
 
 def test_maps_api():
-    lattitude, longitude = get_coordonates_from_address('49 avenue de la redoute, 9600, Asnieres-sur-seine, Paris')
+    lattitude, longitude = get_coordonates_from_address('Domaine de la laigne, asnière la giraud')
 
     get_addr_from_coordonates((lattitude, longitude))
 
