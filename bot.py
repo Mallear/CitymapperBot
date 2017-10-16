@@ -2,6 +2,7 @@ import os
 import time
 import json
 import yaml
+import requests
 from datetime import datetime, time as dtime, timedelta
 import googlemaps
 from slackclient import SlackClient
@@ -23,6 +24,14 @@ channel = "C46UVV43H" # TODO: get channel ID from API
 
 # Google related informations
 gmaps = googlemaps.Client(key=GOOGLE_API_KEY) # Instantiate gmaps
+
+# City mapper API related informations
+CM_ENDPOINT = "https://developer.citymapper.com/api/1/traveltime/?"
+requests_headers = {
+            'user-agent': 'curl/7.47.0',
+            'Content-Type': 'application/json'
+            }
+
 
 # Timer related information
 starting_hour = dtime(6,0)
@@ -79,9 +88,9 @@ def get_travel_time():
     pass
 
 def test_maps_api():
-    lattitude, longitude = get_coordonates_from_address('Domaine de la laigne, asnière la giraud')
+    latitude, longitude = get_coordonates_from_address('Domaine de la laigne, asnière la giraud')
 
-    get_addr_from_coordonates((lattitude, longitude))
+    get_addr_from_coordonates((latitude, longitude))
 
     # Request directions via public transit
     now = datetime.now()
@@ -92,7 +101,7 @@ def test_maps_api():
 
 def get_addr_from_coordonates(coordinates):
     '''
-        Coordonates are a pair of (lattitude, longitude)
+        Coordonates are a pair of (latitude, longitude)
         Return the formatted address
     '''
     reverse_geocode_result = gmaps.reverse_geocode(coordinates)
@@ -104,7 +113,7 @@ def get_addr_from_coordonates(coordinates):
 def get_coordonates_from_address(addr):
     '''
         addr : formatted adress
-        Return pair (lattitude, longitude)
+        Return pair (latitude, longitude)
     '''
     geocode_result = gmaps.geocode(addr)
 
@@ -112,6 +121,24 @@ def get_coordonates_from_address(addr):
     coordinates = geocode_result[0]['geometry']['location']
     return coordinates['lat'], coordinates['lng']
     
+def test_citymapper_api():
+    departure = get_coordonates_from_address('Ekino, Levallois perret')
+    arrival = get_coordonates_from_address('49 avenue de la redoute, Asnieres sur seine')
+    send_citymapper_request(departure, arrival)
+
+def send_citymapper_request(departure, arrival, time = None):
+    response = requests.get(build_citymapper_request(departure, arrival, time))
+    #rint(response.status_code)
+    print(response.json())
+
+def build_citymapper_request(departure, arrival, time = None):
+    request_url = CM_ENDPOINT+'startcoord='+str(departure[0])+ '%2C' + str(departure[1])
+    request_url = request_url + '&endcoord='+str(arrival[0])+ '%2C' + str(arrival[1])
+    if time is not None:
+        request_url = request_url + '&time=' +str(time)
+        request_url = request_url + '&time_type=arrival'
+    request_url = request_url + '&key=' + CITYMAPPER_API_KEY
+    return request_url
 
 if __name__ == "__main__":
     READ_WEBSOCKET_DELAY = 1 # 1 second delay between reading from firehose
@@ -132,7 +159,8 @@ if __name__ == "__main__":
             #print( "Current : " + str(now.time()) + " ; Last : " + str(last_time))
             #print( "Starting : " + str(starting_hour) + " ; Ending : " +str(ending_hour))
             #print(str(starting_hour <= now.time() <= ending_hour))
-            test_maps_api()
+            #test_maps_api()
+            test_citymapper_api()
             if starting_hour <= now.time() <= ending_hour:
                 print(str(last_time <= (now - timedelta(seconds=60*1)).time()))
 
