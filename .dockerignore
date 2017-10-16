@@ -4,3 +4,5 @@ print_bot_id.py
 venv/
 .vscode/
 .gitignore
+__pycache__/
+config.template.yml
