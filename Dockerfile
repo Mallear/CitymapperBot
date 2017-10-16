@@ -2,9 +2,7 @@ FROM python:3.6
 
 COPY . /slack/bot/
 
-RUN pip install slackclient
-RUN pip install googlemaps
-RUN pip install pyyaml
+RUN pip install -r /slack/bot/requirements.txt
 
 EXPOSE 80
 
