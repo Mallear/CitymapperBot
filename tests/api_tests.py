@@ -1,17 +1,20 @@
 from bot import *
-from rapt_wrapper import *
+from ratp_wrapper import *
 
 def test_maps_api():
-    latitude, longitude = get_coordonates_from_address('Domaine de la laigne, asnière la giraud')
+    #latitude, longitude = get_coordonates_from_address('Domaine de la laigne, asnière la giraud')
 
-    get_addr_from_coordonates((latitude, longitude))
+    #get_addr_from_coordonates((latitude, longitude))
 
     # Request directions via public transit
     now = datetime.now()
-    directions_result = gmaps.directions('Sydney Town Hall',
-                                     'Parramatta, NSW',
+    directions_result = gmaps.directions('49 avenue de la redoute, asnieres sur seine',
+                                     'Ekino, levallois perret',
                                      mode='transit',
-                                     departure_time=now)
+                                     departure_time=now,
+                                     alternatives=True)
+    #print(json.dumps(directions_result[0]['legs'][0].json(), indent=4, sort_keys=True))
+    print(directions_result)
 
 def test_citymapper_api():
     departure = get_coordonates_from_address('Ekino, Levallois perret')
@@ -65,4 +68,4 @@ if __name__ == '__main__':
     #test_maps_api()
     #test_citymapper_api()
     #test_ratp_api_request_build()
-    test_ratp_api()
+    #test_ratp_api()
